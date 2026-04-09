@@ -1,11 +1,13 @@
 <template>
   <div>Dashboard Page</div>
   <button @click="Logout">登出</button>
+  <Products />
 </template>
 
 <script setup lang="ts">
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
+import Products from '@/views/Products.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
