@@ -8,15 +8,20 @@
   <p v-if="loading">Loading...</p>
   <p v-else-if="error">{{ error }}</p>
 
-  <ul v-else="products" v-for="items in products" :key="items.id">
-    <li>title:{{ items.title }}</li>
-    <li>body:{{ items.body }}</li>
+  <ul v-else="products">
+    <li v-for="items in products" :key="items.id">
+      <p>title:{{ items.title }}</p>
+      <p>body:{{ items.body }}</p>
+      <button :disabled="deletingId === items.id" @click="handleDeleteProduct(items.id)">
+        {{ deletingId === items.id ? '刪除中...' : '刪除' }}
+      </button>
+    </li>
   </ul>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getProducts, createProduct } from '@/services/api'
+import { getProducts, createProduct, deleteProduct } from '@/services/api'
 
 const products = ref([])
 const loading = ref(false)
@@ -26,6 +31,8 @@ const creating = ref(false)
 
 const title = ref('')
 const body = ref('')
+
+const deletingId = ref(null)
 
 onMounted(async () => {
   loading.value = true
@@ -65,6 +72,20 @@ const handleCreateProduct = async () => {
     body.value = ''
 
     creating.value = false
+  }
+}
+
+const handleDeleteProduct = async (id) => {
+  if (!confirm(`確定要刪除id:${id}嗎?`)) return
+
+  deletingId.value = id
+  try {
+    await deleteProduct(id)
+    products.value = products.value.filter((item) => item.id !== id)
+  } catch (err) {
+    console.log('錯誤', err)
+  } finally {
+    deletingId.value = null
   }
 }
 </script>

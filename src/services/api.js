@@ -9,3 +9,7 @@ export const getProducts = () => {
 export const createProduct = (data) => {
   return axios.post(`${BaseUrl}`, data)
 }
+
+export const deleteProduct = (id) => {
+  return axios.delete(`${BaseUrl}/${id}`)
+}
