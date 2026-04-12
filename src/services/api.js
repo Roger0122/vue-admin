@@ -13,3 +13,7 @@ export const createProduct = (data) => {
 export const deleteProduct = (id) => {
   return axios.delete(`${BaseUrl}/${id}`)
 }
+
+export const putProduct = (id, data) => {
+  return axios.put(`${BaseUrl}/${id}`, data)
+}

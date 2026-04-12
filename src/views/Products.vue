@@ -1,34 +1,41 @@
 <template>
   <div>Products Page</div>
   <p v-if="creating">creating...</p>
-  <input type="text" placeholder="請輸入標題" v-model="title" />
-  <input type="text" placeholder="請輸入內容" v-model="body" />
-  <button @click="handleCreateProduct">新增產品</button>
+  <h2>{{ editingId ? '編輯商品' : '新增商品' }}</h2>
+  <p v-if="editingId">目前編輯中 ID: {{ editingId }}</p>
+  <button v-if="editingId" @click="cancelEdit">取消編輯</button>
+  <input v-model="title" placeholder="title" />
+  <input v-model="body" placeholder="body" />
 
+  <button :disabled="updating" @click="editingId ? handleUpdateProduct() : handleCreateProduct()">
+    {{ updating ? '更新中...' : editingId ? '更新' : '新增' }}
+  </button>
   <p v-if="loading">Loading...</p>
   <p v-else-if="error">{{ error }}</p>
 
-  <ul v-else="products">
-    <li v-for="items in products" :key="items.id">
-      <p>title:{{ items.title }}</p>
-      <p>body:{{ items.body }}</p>
-      <button :disabled="deletingId === items.id" @click="handleDeleteProduct(items.id)">
-        {{ deletingId === items.id ? '刪除中...' : '刪除' }}
+  <ul v-else>
+    <li v-for="item in products" :key="item.id">
+      <p>title:{{ item.title }}</p>
+      <p>body:{{ item.body }}</p>
+      <button :disabled="deletingId === item.id" @click="handleDeleteProduct(item.id)">
+        {{ deletingId === item.id ? '刪除中...' : '刪除' }}
       </button>
+      <button @click="handleEditProduct(item)">編輯</button>
     </li>
   </ul>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getProducts, createProduct, deleteProduct } from '@/services/api'
+import { getProducts, createProduct, deleteProduct, putProduct } from '@/services/api'
 
 const products = ref([])
 const loading = ref(false)
 const error = ref(null)
 
 const creating = ref(false)
-
+const editingId = ref(null)
+const updating = ref(false)
 const title = ref('')
 const body = ref('')
 
@@ -87,6 +94,48 @@ const handleDeleteProduct = async (id) => {
   } finally {
     deletingId.value = null
   }
+}
+
+const handleUpdateProduct = async () => {
+  if (!editingId.value) return
+
+  if (!title.value || !body.value) {
+    alert('請輸入完整資料')
+    return
+  }
+  updating.value = true
+
+  try {
+    const res = await putProduct(editingId.value, {
+      title: title.value,
+      body: body.value,
+    })
+
+    const index = products.value.findIndex((item) => item.id === editingId.value)
+
+    if (index !== -1) {
+      products.value[index] = res.data
+    }
+    editingId.value = null
+    title.value = ''
+    body.value = ''
+  } catch (err) {
+    console.log('錯誤', err)
+  } finally {
+    updating.value = false
+  }
+}
+
+const handleEditProduct = (item) => {
+  editingId.value = item.id
+  title.value = item.title
+  body.value = item.body
+}
+
+const cancelEdit = () => {
+  editingId.value = null
+  title.value = ''
+  body.value = ''
 }
 </script>
 
