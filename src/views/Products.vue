@@ -10,11 +10,11 @@
   <button :disabled="updating" @click="editingId ? handleUpdateProduct() : handleCreateProduct()">
     {{ updating ? '更新中...' : editingId ? '更新' : '新增' }}
   </button>
-  <p v-if="loading">Loading...</p>
-  <p v-else-if="error">{{ error }}</p>
+  <p v-if="productStore.loading">Loading...</p>
+  <p v-else-if="productStore.error">{{ productStore.error }}</p>
 
   <ul v-else>
-    <li v-for="item in products" :key="item.id">
+    <li v-for="item in productStore.products" :key="item.id">
       <p>title:{{ item.title }}</p>
       <p>body:{{ item.body }}</p>
       <button :disabled="deletingId === item.id" @click="handleDeleteProduct(item.id)">
@@ -27,11 +27,9 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getProducts, createProduct, deleteProduct, putProduct } from '@/services/api'
+import { useProductStore } from '@/stores/product'
 
-const products = ref([])
-const loading = ref(false)
-const error = ref(null)
+const productStore = useProductStore()
 
 const creating = ref(false)
 const editingId = ref(null)
@@ -42,16 +40,7 @@ const body = ref('')
 const deletingId = ref(null)
 
 onMounted(async () => {
-  loading.value = true
-  try {
-    const response = await getProducts()
-    products.value = response.data
-  } catch (err) {
-    console.log('錯誤', err)
-    error.value = '獲取產品數據失敗'
-  } finally {
-    loading.value = false
-  }
+  productStore.fetchProducts()
 })
 
 const handleCreateProduct = async () => {
@@ -64,13 +53,13 @@ const handleCreateProduct = async () => {
   }
 
   try {
-    const res = await createProduct({
+    const res = {
       title: title.value,
       body: body.value,
-    })
+    }
 
-    if (res.data) {
-      products.value.unshift(res.data)
+    if (res) {
+      productStore.addProduct(res)
     }
   } catch (err) {
     console.log('錯誤', err)
@@ -87,8 +76,7 @@ const handleDeleteProduct = async (id) => {
 
   deletingId.value = id
   try {
-    await deleteProduct(id)
-    products.value = products.value.filter((item) => item.id !== id)
+    await productStore.removeProduct(id)
   } catch (err) {
     console.log('錯誤', err)
   } finally {
@@ -106,16 +94,11 @@ const handleUpdateProduct = async () => {
   updating.value = true
 
   try {
-    const res = await putProduct(editingId.value, {
+    await productStore.updateProduct(editingId.value, {
       title: title.value,
       body: body.value,
     })
 
-    const index = products.value.findIndex((item) => item.id === editingId.value)
-
-    if (index !== -1) {
-      products.value[index] = res.data
-    }
     editingId.value = null
     title.value = ''
     body.value = ''
